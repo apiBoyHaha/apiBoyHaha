@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	fileUrl = "https://vd3.bdstatic.com/mda-kgkaebxu40y4d7th/v2-hknm/sc/mda-kgkaebxu40y4d7th.mp4?v_from_s=hkapp-haokan-hnb&amp;auth_key=1663056622-0-0-bf87e34d6342e8519b3f5c611ab5a7e5&amp;bcevod_channel=searchbox_feed&amp;cd=0&amp;pd=1&amp;pt=3&amp;logid=2421828632&amp;vid=5381429901807271381&amp;abtest=104378_2&amp;klogid=2421828632"
+	fileUrl  = "https://vd3.bdstatic.com/mda-kgkaebxu40y4d7th/v2-hknm/sc/mda-kgkaebxu40y4d7th.mp4?v_from_s=hkapp-haokan-hnb&amp;auth_key=1663056622-0-0-bf87e34d6342e8519b3f5c611ab5a7e5&amp;bcevod_channel=searchbox_feed&amp;cd=0&amp;pd=1&amp;pt=3&amp;logid=2421828632&amp;vid=5381429901807271381&amp;abtest=104378_2&amp;klogid=2421828632"
+	htmlFile = "https://www.baidu.com/"
 )
 
 var (
@@ -26,8 +27,9 @@ func init() {
 }
 
 func downloadEx() {
+	url := fileUrl
 	headers := make(map[string]string)
-	res, err := Request(http.MethodGet, fileUrl, nil, headers)
+	res, err := Request(http.MethodGet, url, nil, headers)
 	if err != nil {
 		logger.Println(`Request err=`, err)
 		return
@@ -46,12 +48,13 @@ func downloadEx() {
 
 func downloadSimple() {
 	// 文件url需要修改成目标地址
+	url := htmlFile
 	logger.Println(`start download...`)
-	err := DownloadFile("22.mp4", fileUrl)
+	err := DownloadFile("22.mp4", url)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println("Downloaded: " + fileUrl)
+	fmt.Println("Downloaded: " + url)
 }
 
 // DownloadFile will download a url to a local file. It's efficient because it will
@@ -70,14 +73,13 @@ func DownloadFile(filepath string, url string) error {
 		return err
 	}
 	defer out.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
+	written, copyErr := io.Copy(out, resp.Body)
+	logger.Printf(`written=%d,copyErr=%+v`, written, copyErr)
 	return err
 }
 
-// FakeHeaders fake http headers
-var FakeHeaders = map[string]string{
+// FakeHeadersVideo fake http headers
+var FakeHeadersVideo = map[string]string{
 	"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 	"Accept-Charset":  "UTF-8,*;q=0.5",
 	"Accept-Encoding": "gzip,deflate,sdch",
@@ -85,10 +87,19 @@ var FakeHeaders = map[string]string{
 	"User-Agent":      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.81 Safari/537.36",
 }
 
+// FakeHeaders fake http headers html文件也能下载
+var FakeHeaders = map[string]string{
+	"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+	"Connection":      "keep-alive",
+	"Accept-Encoding": "*",
+	"Accept-Charset":  "UTF-8,*;q=0.5",
+	"Accept-Language": "en-US,en;q=0.8",
+	"User-Agent":      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.81 Safari/537.36",
+}
+
 const retryTimes = 3
 
 func Request(method, url string, body io.Reader, headers map[string]string) (*http.Response, error) {
-	fmt.Println()
 	transport := &http.Transport{
 		Proxy:               http.ProxyFromEnvironment,
 		DisableCompression:  true,
